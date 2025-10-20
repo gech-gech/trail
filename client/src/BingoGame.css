@@ -1,0 +1,329 @@
+* General Styles */
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: 
+    radial-gradient(circle at 10% 20%, rgba(26, 26, 46, 0.8) 0%, rgba(11, 11, 25, 0.9) 90%),
+    url('data:image/svg+xml;utf8,<svg width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"><circle cx="50" cy="50" r="1" fill="%2342426b" opacity="0.5"/></svg>');
+  color: white;
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+  overflow-x: hidden;
+  position: relative;
+}
+
+body::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    45deg,
+    rgba(76, 255, 143, 0.03) 0%,
+    rgba(0, 180, 219, 0.03) 50%,
+    rgba(76, 255, 143, 0.03) 100%
+  );
+  background-size: 200% 200%;
+  animation: gradientPulse 15s ease infinite;
+  z-index: -1;
+}
+
+@keyframes gradientPulse {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.bingo-game {
+  text-align: center;
+}
+
+.header {
+  background: linear-gradient(145deg, #0a1a3a, #0f3460);
+  padding: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+  position: relative;
+  z-index: 10;
+  animation: headerGlow 6s ease infinite alternate;
+  border-bottom: 2px solid rgba(76, 255, 143, 0.3);
+}
+
+@keyframes headerGlow {
+  0% { 
+    box-shadow: 0 4px 20px rgba(0, 180, 219, 0.3);
+    border-bottom-color: rgba(0, 180, 219, 0.4);
+  }
+  50% {
+    box-shadow: 0 4px 20px rgba(76, 255, 143, 0.4);
+    border-bottom-color: rgba(76, 255, 143, 0.5);
+  }
+  100% { 
+    box-shadow: 0 4px 20px rgba(0, 180, 219, 0.3);
+    border-bottom-color: rgba(0, 180, 219, 0.4);
+  }
+}
+
+.profile-section {
+  display: flex;
+  align-items: center;
+}
+
+.profile {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.title-section {
+  margin-left: auto;
+  padding-right: 20px;
+}
+
+.profile img, .avatar-fallback {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  margin-right: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.avatar-fallback {
+  background-color: teal;
+  color: white;
+  font-weight: bold;
+  font-size: 1.2rem;
+}
+
+.card-container {
+  margin: 2% auto;
+  padding: 25px 5%;
+  background: rgba(44, 62, 80, 0.7);
+  border-radius: 15px;
+  width: 90%;
+  max-width: 1100px;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+  position: relative;
+  overflow: hidden;
+  min-height: 60vh;
+}
+
+.card-container::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle, rgba(76, 255, 143, 0.1) 0%, transparent 70%);
+  animation: rotate 20s linear infinite;
+  z-index: -1;
+}
+
+@keyframes rotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.slider-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 20px;
+  width: 100%;
+  max-width: 900px;
+  margin-left: auto;
+  margin-right: auto;
+  overflow: hidden;
+}
+
+.slider {
+  display: flex;
+  overflow-x: auto;
+  gap: 20px;
+  padding: 10px;
+  scroll-behavior: smooth;
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.slider::-webkit-scrollbar {
+  display: none;
+}
+
+.slider-button {
+  background: linear-gradient(145deg, #00b4db, #0083b0);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  font-size: 1.5rem;
+  width: 50px;
+  height: 50px;
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  transition: all 0.3s ease;
+}
+
+.slider-button:hover {
+  transform: scale(1.1);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+}
+
+.slider-button:active {
+  transform: scale(0.95);
+}
+
+.bingo-card {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 10px; /* Increased gap for better spacing between cards */
+  background: linear-gradient(145deg, #2a5298, #1e3c72); /* Adjusted gradient for better visibility */
+  border-radius: 10px;
+  padding: 22px;
+  width: 100%; /* Set width to 100% to prevent collapsing */
+  max-width: 250px; /* Maintain max width for individual cards */
+  text-align: center;
+  color: white; /* Ensure text is white for contrast */
+  font-weight: bold;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.3s ease;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.bingo-card:hover {
+  transform: translateY(-5px) scale(1.05); /* Slightly increased scale for hover effect */
+  box-shadow: 0 8px 16px rgba(0, 180, 219, 0.5); /* Enhanced shadow on hover */
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.bingo-card.selected {
+  border: 3px solid #4cff8f;
+  box-shadow: 0 0 15px rgba(76, 255, 143, 0.5);
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.02); }
+  100% { transform: scale(1); }
+}
+
+.cell {
+  padding: 8px 6px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 5px;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 32px;
+  font-size: 0.85rem;
+}
+
+.header-cell {
+  background: linear-gradient(to right, #00b4db, #0083b0);
+  color: rgb(17, 16, 16);
+  font-weight: bold;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+  font-size: 1em;
+  padding: 8px 6px;
+  min-height: 32px;
+  border-radius: 5px;
+}
+
+/* Free space styling */
+.bingo-card .cell:nth-child(13) {
+  background: rgba(255, 215, 0, 0.2);
+  position: relative;
+}
+
+.bingo-card .cell:nth-child(13)::after {
+  content: "FREE";
+  position: absolute;
+  font-size: 0.8em;
+  color: gold;
+  font-weight: bold;
+}
+
+.selection-summary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 30px;
+  margin-top: 25px;
+  padding: 15px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 10px;
+  backdrop-filter: blur(5px);
+}
+
+.selected-count-box {
+  background: linear-gradient(145deg, #1e3c72, #2a5298);
+  padding: 15px 25px;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  border: 2px solid rgba(0, 255, 255, 0.3);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  min-width: 120px;
+}
+
+.selected-count-box span {
+  font-weight: bold;
+  color: white;
+  font-size: 1.1em;
+}
+
+.selected-count-box span:first-child {
+  color: #4cff8f;
+  margin-bottom: 5px;
+}
+
+.bet-button {
+  padding: 12px 30px;
+  font-size: 16px;
+  background: linear-gradient(to right, #00b4db, #0083b0);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  min-width: 150px;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.bet-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+  background: linear-gradient(to right, #0083b0, #00b4db);
+}
+
+.bet-button:active {
+  transform: translateY(0);
+}
+
+h2{
+  color:white;
+}
