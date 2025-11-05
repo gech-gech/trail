@@ -16,8 +16,22 @@ const PORT = 5000;
 
 const SECRET_KEY = process.env.SECRET_KEY || "your_default_secret_key";
 
-// Middleware setup
-app.use(cors());
+// In your server.js, update the CORS configuration:
+app.use(cors({
+  origin: [
+    "http://localhost:5173",
+    "https://effective-acorn-7vwx7gj7xrgwfw5rr-5173.app.github.dev",
+    "https://effective-5000acorn-7vwx7gj7xrgwfw5rr-5173.app.github.dev",
+    "https://*.app.github.dev",
+    "https://*.github.dev"
+  ],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Content-Length', 'X-Requested-With']
+}));
+
+// Handle preflight requests
+app.options('*', cors());
 app.use(express.json());
 
 // Serve static files from public directory
@@ -95,6 +109,27 @@ const MONGODB_URI = process.env.MONGODB_URI || "mongodb://localhost:27017/mydata
 mongoose.connect(MONGODB_URI)
   .then(() => console.log("MongoDB connected ✅"))
   .catch((err) => console.error("MongoDB Connection Error ❌:", err));
+  // Add this route after your middleware and before other routes
+app.get('/api', (req, res) => {
+  res.json({ 
+    message: '🚀 Backend is running!',
+    timestamp: new Date().toISOString(),
+    status: 'OK'
+  });
+});
+
+// Test all your main routes
+app.get('/api/test', (req, res) => {
+  res.json({ 
+    message: 'All API routes are working!',
+    routes: {
+      signup: 'POST /signup',
+      login: 'POST /login', 
+      groups: 'GET /api/groups',
+      createGroup: 'POST /api/groups'
+    }
+  });
+});
 
 // Auth middleware
 const auth = async (req, res, next) => {
