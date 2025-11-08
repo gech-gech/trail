@@ -5,6 +5,10 @@ import './GroupPage.css';
 const GroupPage = () => {
   const { groupId } = useParams();
   const navigate = useNavigate();
+  
+  // ✅ Add API Base URL constant
+  const API_BASE_URL = 'https://zany-system-r4wx7j57xprw35wx-5000.app.github.dev';
+  
   const [group, setGroup] = useState(null);
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -23,12 +27,13 @@ const GroupPage = () => {
   const [winnerDeclared, setWinnerDeclared] = useState(false);
   const [winnerDetails, setWinnerDetails] = useState(null);
   const [showPrizeAnimation, setShowPrizeAnimation] = useState(false);
- const [prizeType, setPrizeType] = useState('money'); // Default prize type
-const [prizeAmount, setPrizeAmount] = useState(0); // For money prize
-const [showPrizeOptions, setShowPrizeOptions] = useState(false); // Toggle prize options
-const [finalPrize, setFinalPrize] = useState(0); // Final 
-const [prizePhoto, setPrizePhoto] = useState(null); // For photo prize
-const [prizeVideo, setPrizeVideo] = useState(null);
+  const [prizeType, setPrizeType] = useState('money'); // Default prize type
+  const [prizeAmount, setPrizeAmount] = useState(0); // For money prize
+  const [showPrizeOptions, setShowPrizeOptions] = useState(false); // Toggle prize options
+  const [finalPrize, setFinalPrize] = useState(0); // Final 
+  const [prizePhoto, setPrizePhoto] = useState(null); // For photo prize
+  const [prizeVideo, setPrizeVideo] = useState(null);
+
   const handleLeaveGroup = async () => {
     if (!user?.token) {
       setError('You must be logged in to leave the group');
@@ -36,7 +41,7 @@ const [prizeVideo, setPrizeVideo] = useState(null);
     }
 
     try {
-      const response = await fetch(`http://localhost:5000/api/groups/${groupId}/leave`, {
+      const response = await fetch(`${API_BASE_URL}/api/groups/${groupId}/leave`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${user.token}`,
@@ -56,61 +61,64 @@ const [prizeVideo, setPrizeVideo] = useState(null);
       setError(error.message || 'Failed to leave group');
     }
   };
-const handleSetPrize = async () => {
-  if (!prizeType) {
-    alert('Please select a prize type.');
-    return;
-  }
 
-  const formData = new FormData();
-  formData.append('prizeType', prizeType);
-
-  if (prizeType === 'money') {
-    formData.append('prizeAmount', prizeAmount);
-  } else if (prizeType === 'photo' && prizePhoto) {
-    formData.append('prizeFile', prizePhoto);
-  } else if (prizeType === 'video' && prizeVideo) {
-    formData.append('prizeFile', prizeVideo);
-  } else if (prizeType === 'auto') {
-    const calculatedPrize = group.price * (members.length || 1);
-    formData.append('prizeAmount', calculatedPrize);
-  } else {
-    alert('Please upload a valid file for the prize.');
-    return;
-  }
-
-  try {
-    const response = await fetch(`http://localhost:5000/api/groups/${groupId}/set-prize`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${user.token}`,
-      },
-      body: formData,
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || 'Failed to set prize');
+  const handleSetPrize = async () => {
+    if (!prizeType) {
+      alert('Please select a prize type.');
+      return;
     }
 
-    alert('Prize set successfully!');
-    setShowPrizeOptions(false); // Hide the options after saving
-  } catch (error) {
-    console.error('Error setting prize:', error);
-    setError(error.message || 'Failed to set prize');
-  }
-};
-useEffect(() => {
-  if (user?.token) {
-    fetchUserCards();
-  }
-}, [user, groupId]);
+    const formData = new FormData();
+    formData.append('prizeType', prizeType);
+
+    if (prizeType === 'money') {
+      formData.append('prizeAmount', prizeAmount);
+    } else if (prizeType === 'photo' && prizePhoto) {
+      formData.append('prizeFile', prizePhoto);
+    } else if (prizeType === 'video' && prizeVideo) {
+      formData.append('prizeFile', prizeVideo);
+    } else if (prizeType === 'auto') {
+      const calculatedPrize = group.price * (members.length || 1);
+      formData.append('prizeAmount', calculatedPrize);
+    } else {
+      alert('Please upload a valid file for the prize.');
+      return;
+    }
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/groups/${groupId}/set-prize`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${user.token}`,
+        },
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to set prize');
+      }
+
+      alert('Prize set successfully!');
+      setShowPrizeOptions(false); // Hide the options after saving
+    } catch (error) {
+      console.error('Error setting prize:', error);
+      setError(error.message || 'Failed to set prize');
+    }
+  };
+
+  useEffect(() => {
+    if (user?.token) {
+      fetchUserCards();
+    }
+  }, [user, groupId]);
+
   useEffect(() => {
     const fetchUserCards = async () => {
       if (!user?.token) return;
       
       try {
-        const response = await fetch(`http://localhost:5000/api/groups/${groupId}/user-cards`, {
+        const response = await fetch(`${API_BASE_URL}/api/groups/${groupId}/user-cards`, {
           headers: {
             Authorization: `Bearer ${user.token}`,
           },
@@ -153,7 +161,7 @@ useEffect(() => {
     if (!isBackgroundFetch) setLoading(true);
 
     try {
-      const listResponse = await fetch('http://localhost:5000/api/groups', {
+      const listResponse = await fetch(`${API_BASE_URL}/api/groups`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
 
@@ -221,7 +229,7 @@ useEffect(() => {
 
   const fetchGroupMembers = useCallback(async (token) => {
     try {
-      const response = await fetch(`http://localhost:5000/api/groups/${groupId}/members`, {
+      const response = await fetch(`${API_BASE_URL}/api/groups/${groupId}/members`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (!response.ok) return setMembers([]);
@@ -246,7 +254,7 @@ useEffect(() => {
     if (!user?.token) return;
     const fetchCalledNumbers = async () => {
       try {
-        const response = await fetch(`http://localhost:5000/api/groups/${groupId}`, {
+        const response = await fetch(`${API_BASE_URL}/api/groups/${groupId}`, {
           headers: { 'Authorization': `Bearer ${user.token}` }
         });
         if (!response.ok) return;
@@ -297,7 +305,7 @@ useEffect(() => {
     if (numberCallingMechanism === 'card-limit' && group?.cardLimit) {
       const checkCardLimit = async () => {
         try {
-          const response = await fetch(`http://localhost:5000/api/groups/${groupId}/check-card-limit`, {
+          const response = await fetch(`${API_BASE_URL}/api/groups/${groupId}/check-card-limit`, {
             method: 'POST',
             headers: {
               Authorization: `Bearer ${user.token}`,
@@ -331,7 +339,7 @@ useEffect(() => {
   const checkWinner = useCallback(async () => {
     if (!user?.token || winnerDeclared) return;
     try {
-      const response = await fetch(`http://localhost:5000/api/groups/${groupId}/check-winner`, {
+      const response = await fetch(`${API_BASE_URL}/api/groups/${groupId}/check-winner`, {
         method: 'GET',
         headers: { Authorization: `Bearer ${user.token}` },
       });
@@ -365,7 +373,7 @@ useEffect(() => {
     }
 
     try {
-      const response = await fetch(`http://localhost:5000/api/groups/${groupId}/restart-game`, {
+      const response = await fetch(`${API_BASE_URL}/api/groups/${groupId}/restart-game`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${user.token}` },
       });
@@ -386,8 +394,6 @@ useEffect(() => {
   };
 
   const winnerDeclaredRef = useRef(false);
-
-
 
   const handleMechanismChange = (e) => {
     const selectedMechanism = e.target.value;
@@ -412,7 +418,7 @@ useEffect(() => {
     }
 
     try {
-      const response = await fetch(`http://localhost:5000/api/groups/${groupId}/set-timer`, {
+      const response = await fetch(`${API_BASE_URL}/api/groups/${groupId}/set-timer`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${user.token}`,
@@ -441,7 +447,7 @@ useEffect(() => {
     }
 
     try {
-      const response = await fetch(`http://localhost:5000/api/groups/${groupId}/set-card-limit`, {
+      const response = await fetch(`${API_BASE_URL}/api/groups/${groupId}/set-card-limit`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${user.token}`,
@@ -483,7 +489,7 @@ useEffect(() => {
     }
 
     try {
-      const response = await fetch(`http://localhost:5000/api/groups/${groupId}/clear-bingo-cards`, {
+      const response = await fetch(`${API_BASE_URL}/api/groups/${groupId}/clear-bingo-cards`, {
         method: 'DELETE',
         headers: {
           Authorization: `Bearer ${user.token}`,
@@ -532,87 +538,89 @@ useEffect(() => {
       default: return '$';
     }
   };
-const fetchUserCards = async () => {
-  try {
-    const response = await fetch(`http://localhost:5000/api/groups/${groupId}/user-cards`, {
-      method: 'GET',
-      headers: {
-        Authorization: `Bearer ${user.token}`,
-      },
-    });
 
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || 'Failed to fetch user cards');
-    }
-
-    const data = await response.json();
-    console.log('Fetched user cards:', data.cards); // Debugging log
-    setSelectedCards(data.cards); // Update the state with the user's cards
-  } catch (error) {
-    console.error('Error fetching user cards:', error);
-    setError(error.message || 'Failed to fetch user cards');
-  }
-};
-const handleCallNumber = async () => {
-  if (winnerDeclared) {
-    console.log('Winner already declared. Stopping further calls.');
-    return;
-  }
-
-  if (!user?.token) {
-    setError('You must be logged in to call a number');
-    return;
-  }
-
-  if (!group || !group._id) {
-    setError('Group details not loaded');
-    return;
-  }
-
-  if (!isCreator()) {
-    setError('Only the group creator can call numbers');
-    return;
-  }
-
-  try {
-    const response = await fetch(`http://localhost:5000/api/groups/${groupId}/call-number`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${user.token}`,
-        'Content-Type': 'application/json',
-      },
-    });
-
-    const data = await response.json();
-
-    if (!response.ok) {
-      throw new Error(data.message || 'Failed to call number');
-    }
-
-    console.log('Number called:', data.calledNumber);
-
-    // Update the calledNumbers state with the new list from the backend
-    setCalledNumbers(data.calledNumbers);
-
-    // Check if a winner is declared
-    if (data.winner) {
-      setWinnerDeclared(true);
-      const winnerName = data.winner.name || data.winner.userName || 'Unknown Winner';
-      setWinnerDetails({
-        name: winnerName,
-        cardId: data.winner._id,
-        email: data.winner.userEmail,
+  const fetchUserCards = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/groups/${groupId}/user-cards`, {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${user.token}`,
+        },
       });
 
-      // Stop further number calls
-      alert(`🎉 We have a winner! Congratulations ${winnerName}! 🎉`);
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to fetch user cards');
+      }
+
+      const data = await response.json();
+      console.log('Fetched user cards:', data.cards); // Debugging log
+      setSelectedCards(data.cards); // Update the state with the user's cards
+    } catch (error) {
+      console.error('Error fetching user cards:', error);
+      setError(error.message || 'Failed to fetch user cards');
     }
-  } catch (error) {
-    console.error('Error calling number:', error);
-    setError(error.message || 'Failed to call number');
-  }
-};
+  };
+
+  const handleCallNumber = async () => {
+    if (winnerDeclared) {
+      console.log('Winner already declared. Stopping further calls.');
+      return;
+    }
+
+    if (!user?.token) {
+      setError('You must be logged in to call a number');
+      return;
+    }
+
+    if (!group || !group._id) {
+      setError('Group details not loaded');
+      return;
+    }
+
+    if (!isCreator()) {
+      setError('Only the group creator can call numbers');
+      return;
+    }
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/groups/${groupId}/call-number`, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${user.token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to call number');
+      }
+
+      console.log('Number called:', data.calledNumber);
+
+      // Update the calledNumbers state with the new list from the backend
+      setCalledNumbers(data.calledNumbers);
+
+      // Check if a winner is declared
+      if (data.winner) {
+        setWinnerDeclared(true);
+        const winnerName = data.winner.name || data.winner.userName || 'Unknown Winner';
+        setWinnerDetails({
+          name: winnerName,
+          cardId: data.winner._id,
+          email: data.winner.userEmail,
+        });
+
+        // Stop further number calls
+        alert(`🎉 We have a winner! Congratulations ${winnerName}! 🎉`);
+      }
+    } catch (error) {
+      console.error('Error calling number:', error);
+      setError(error.message || 'Failed to call number');
+    }
+  };
 
   if (loading) {
     return (
@@ -650,12 +658,12 @@ const handleCallNumber = async () => {
 
   return (
     <div className="group-page-container">
-     {showPrizeAnimation && (
-      <div className="prize-animation">
-        <div className="confetti"></div>
-        <h1 className="winner-announcement">🎉 Congratulations {winnerDetails?.name || 'Winner'}! 🎉</h1>
-      </div>
-    )}
+      {showPrizeAnimation && (
+        <div className="prize-animation">
+          <div className="confetti"></div>
+          <h1 className="winner-announcement">🎉 Congratulations {winnerDetails?.name || 'Winner'}! 🎉</h1>
+        </div>
+      )}
       <div className="group-main-content">
         <div className="group-header">
           <div className="group-title-section">
@@ -664,102 +672,102 @@ const handleCallNumber = async () => {
           </div>
           <div className="group-meta">
             <div className="prize-board">
-  <div className="prize-board-title">Prize Pool</div>
-            <div className="prize-board-amount">
-              {getCurrencySymbol(group.currency)}
-              {group.prize && group.prize.amount
-                ? group.prize.amount
-                : group.bingoCards && group.bingoCards.length > 0
-                ? group.price * group.bingoCards.length
-                : group.price * (members.length || 1)}
-            </div>
-            <div className="prize-board-members">
-              ({members.length} member{members.length !== 1 ? 's' : ''} playing)
-            </div>
-            {group.prize && group.prize.type === 'photo' && group.prize.file && (
-              <div className="prize-media">
-                <img
-                  src={`/uploads/prizes/${group.prize.file || group.prize.filename}`}
-                  alt="Prize"
-                  className="prize-image"
-                />
+              <div className="prize-board-title">Prize Pool</div>
+              <div className="prize-board-amount">
+                {getCurrencySymbol(group.currency)}
+                {group.prize && group.prize.amount
+                  ? group.prize.amount
+                  : group.bingoCards && group.bingoCards.length > 0
+                  ? group.price * group.bingoCards.length
+                  : group.price * (members.length || 1)}
               </div>
-            )}
-            {group.prize && group.prize.type === 'video' && group.prize.file && (
-              <div className="prize-media">
-                <video controls className="prize-video-player">
-                  <source src={`/uploads/prizes/${group.prize.file || group.prize.filename}`} type={group.prize.mimetype} />
-                  Your browser does not support the video tag.
-                </video>
+              <div className="prize-board-members">
+                ({members.length} member{members.length !== 1 ? 's' : ''} playing)
               </div>
-            )}
-            {isCreator() && (
-            <div className="prize-management">
-              <button
-                className="toggle-prize-button"
-                onClick={() => setShowPrizeOptions((prev) => !prev)}
-              >
-                Set Prize
-              </button>
-              {showPrizeOptions && (
-                <div className="prize-options">
-                  <label htmlFor="prizeType">Prize Type:</label>
-                  <select
-                    id="prizeType"
-                    value={prizeType}
-                    onChange={(e) => setPrizeType(e.target.value)}
+              {group.prize && group.prize.type === 'photo' && group.prize.file && (
+                <div className="prize-media">
+                  <img
+                    src={`/uploads/prizes/${group.prize.file || group.prize.filename}`}
+                    alt="Prize"
+                    className="prize-image"
+                  />
+                </div>
+              )}
+              {group.prize && group.prize.type === 'video' && group.prize.file && (
+                <div className="prize-media">
+                  <video controls className="prize-video-player">
+                    <source src={`/uploads/prizes/${group.prize.file || group.prize.filename}`} type={group.prize.mimetype} />
+                    Your browser does not support the video tag.
+                  </video>
+                </div>
+              )}
+              {isCreator() && (
+                <div className="prize-management">
+                  <button
+                    className="toggle-prize-button"
+                    onClick={() => setShowPrizeOptions((prev) => !prev)}
                   >
-                    <option value="money">Money</option>
-                    <option value="photo">Photo</option>
-                    <option value="video">Video</option>
-                    <option value="auto">Auto (Cards × Min Amount)</option>
-                  </select>
-  
-                  {prizeType === 'money' && (
-                    <div className="prize-money">
-                      <label htmlFor="prizeAmount">Enter Prize Amount:</label>
-                      <input
-                        type="number"
-                        id="prizeAmount"
-                        value={prizeAmount}
-                        onChange={(e) => setPrizeAmount(Number(e.target.value))}
-                        min="0"
-                      />
-                    </div>
-                  )}
-  
-                  {prizeType === 'photo' && (
-                    <div className="prize-photo">
-                      <label htmlFor="prizePhoto">Upload Prize Photo:</label>
-                      <input
-                        type="file"
-                        id="prizePhoto"
-                        accept="image/*"
-                        onChange={(e) => setPrizePhoto(e.target.files[0])}
-                      />
-                    </div>
-                  )}
-  
-                  {prizeType === 'video' && (
-                    <div className="prize-video">
-                      <label htmlFor="prizeVideo">Upload Prize Video:</label>
-                      <input
-                        type="file"
-                        id="prizeVideo"
-                        accept="video/*"
-                        onChange={(e) => setPrizeVideo(e.target.files[0])}
-                      />
-                    </div>
-                  )}
-  
-                  <button onClick={handleSetPrize} className="save-prize-button">
-                    Save Prize
+                    Set Prize
                   </button>
+                  {showPrizeOptions && (
+                    <div className="prize-options">
+                      <label htmlFor="prizeType">Prize Type:</label>
+                      <select
+                        id="prizeType"
+                        value={prizeType}
+                        onChange={(e) => setPrizeType(e.target.value)}
+                      >
+                        <option value="money">Money</option>
+                        <option value="photo">Photo</option>
+                        <option value="video">Video</option>
+                        <option value="auto">Auto (Cards × Min Amount)</option>
+                      </select>
+      
+                      {prizeType === 'money' && (
+                        <div className="prize-money">
+                          <label htmlFor="prizeAmount">Enter Prize Amount:</label>
+                          <input
+                            type="number"
+                            id="prizeAmount"
+                            value={prizeAmount}
+                            onChange={(e) => setPrizeAmount(Number(e.target.value))}
+                            min="0"
+                          />
+                        </div>
+                      )}
+      
+                      {prizeType === 'photo' && (
+                        <div className="prize-photo">
+                          <label htmlFor="prizePhoto">Upload Prize Photo:</label>
+                          <input
+                            type="file"
+                            id="prizePhoto"
+                            accept="image/*"
+                            onChange={(e) => setPrizePhoto(e.target.files[0])}
+                          />
+                        </div>
+                      )}
+      
+                      {prizeType === 'video' && (
+                        <div className="prize-video">
+                          <label htmlFor="prizeVideo">Upload Prize Video:</label>
+                          <input
+                            type="file"
+                            id="prizeVideo"
+                            accept="video/*"
+                            onChange={(e) => setPrizeVideo(e.target.files[0])}
+                          />
+                        </div>
+                      )}
+      
+                      <button onClick={handleSetPrize} className="save-prize-button">
+                        Save Prize
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
-            )}
-</div>
             <div className="group-price">
               <span className="label">Minimum Amount:</span>
               <span className="value">{getCurrencySymbol(group.currency)}{group.price}</span>
@@ -811,7 +819,7 @@ const handleCallNumber = async () => {
           {isCreator() && (
             <>
               <div className="card-count">
-                                       Number of Cards {group?.bingoCards ? group.bingoCards.length : 0}
+                Number of Cards {group?.bingoCards ? group.bingoCards.length : 0}
               </div>
               <button onClick={handleRestartGame} className="restart-button">
                 Restart Game
@@ -842,43 +850,43 @@ const handleCallNumber = async () => {
             <div className="inner-dots"></div>
           </div>
         </div>
-<div className="cards-container" style={{ marginTop: '20px' }}>
-  {selectedCards.length > 0 ? (
-    selectedCards.map((card, cardIndex) => (
-      <div key={cardIndex} className="bingo-card">
-        {card.numbers && typeof card.numbers === 'object' && !Array.isArray(card.numbers) ? (
-          ['B', 'I', 'N', 'G', 'O'].map((letter) => (
-            <div key={letter} className="column">
-              <div className="cell header-cell">{letter}</div>
-              {Array.isArray(card.numbers[letter]) ? (
-                card.numbers[letter].map((num, j) => (
-                  <div
-                    key={j}
-                    className={`cell ${
-                      calledNumbers.includes(`${letter}${num}`)
-                        ? 'marked'
-                        : winnerDeclared
-                        ? 'unmarked'
-                        : ''
-                    }`}
-                  >
-                    {num}
-                  </div>
-                ))
-              ) : (
-                <p>Invalid card data</p>
-              )}
-            </div>
-          ))
-        ) : (
-          <p>Invalid card data</p>
-        )}
-      </div>
-    ))
-  ) : (
-    <p>No cards selected yet</p>
-  )}
-</div>
+        <div className="cards-container" style={{ marginTop: '20px' }}>
+          {selectedCards.length > 0 ? (
+            selectedCards.map((card, cardIndex) => (
+              <div key={cardIndex} className="bingo-card">
+                {card.numbers && typeof card.numbers === 'object' && !Array.isArray(card.numbers) ? (
+                  ['B', 'I', 'N', 'G', 'O'].map((letter) => (
+                    <div key={letter} className="column">
+                      <div className="cell header-cell">{letter}</div>
+                      {Array.isArray(card.numbers[letter]) ? (
+                        card.numbers[letter].map((num, j) => (
+                          <div
+                            key={j}
+                            className={`cell ${
+                              calledNumbers.includes(`${letter}${num}`)
+                                ? 'marked'
+                                : winnerDeclared
+                                ? 'unmarked'
+                                : ''
+                            }`}
+                          >
+                            {num}
+                          </div>
+                        ))
+                      ) : (
+                        <p>Invalid card data</p>
+                      )}
+                    </div>
+                  ))
+                ) : (
+                  <p>Invalid card data</p>
+                )}
+              </div>
+            ))
+          ) : (
+            <p>No cards selected yet</p>
+          )}
+        </div>
       </div>
 
       <div className="members-sidebar">
