@@ -76,107 +76,99 @@ const Home = () => {
     checkAuthAndFetchGroups();
   }, [navigate]);
 
-  const fetchGroups = async (token) => {
-    try {
-      setLoading(true);
-      const response = await fetch('http://localhost:5000/api/groups', {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch groups');
-      }
-
-      const data = await response.json();
-      console.log('Fetched groups:', data);
-
-      const formattedGroups = Array.isArray(data)
-        ? data
-        : data.groups
-        ? data.groups
-        : [];
-
-      const processedGroups = formattedGroups.map((group) => ({
-        _id: group._id,
-        name: group.name,
-        price: group.price,
-        currency: group.currency || 'USD',
-        isPrivate: group.isPrivate || false,
-        memberLimit: group.memberLimit || 0,
-        currentMembers: group.currentMembers || (group.members?.length || 0),
-        members: group.members || [],
-        createdBy: group.createdBy || { _id: group.creatorId, name: 'Unknown' },
-        createdAt: group.createdAt,
-      }));
-
-      setGroups(processedGroups);
-      setFilteredGroups(processedGroups);
-    } catch (error) {
-      console.error('Error fetching groups:', error);
-      setError('Failed to load groups. Please try again later.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleJoinGroup = async (group) => {
-    if (!user?.token) {
+  const fetchGroups = async () => {
+  try {
+    const userJSON = localStorage.getItem('user');
+    if (!userJSON) {
       navigate('/login');
       return;
     }
-
-    const groupId = getGroupId(group);
-
-    if (!groupId) {
-      setError('Invalid group ID. Cannot join group.');
-      return;
-    }
-
-    setJoinLoading((prev) => ({ ...prev, [groupId]: true }));
-    try {
-      const response = await fetch(`http://localhost:5000/api/groups/${groupId}/join`, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${user.token}`,
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.message || 'Failed to join group');
+    
+    const user = JSON.parse(userJSON);
+    
+    // Use your Codespace URL
+    const API_BASE_URL = 'https://zany-system-r4wx7j57xprw35wx-5000.app.github.dev';
+    
+    const response = await fetch(`${API_BASE_URL}/api/groups`, {
+      headers: { 
+        'Authorization': `Bearer ${user.token}`,
+        'Content-Type': 'application/json'
       }
+    });
 
-      const joinResponseData = await response.json();
-      console.log('Successfully joined group:', joinResponseData);
-
-      // Update the group state to reflect the user joining
-      setGroups((prevGroups) =>
-        prevGroups.map((g) =>
-          g._id === groupId
-            ? { ...g, members: [...g.members, user], currentMembers: g.currentMembers + 1 }
-            : g
-        )
-      );
-
-      setFilteredGroups((prevFiltered) =>
-        prevFiltered.map((g) =>
-          g._id === groupId
-            ? { ...g, members: [...g.members, user], currentMembers: g.currentMembers + 1 }
-            : g
-        )
-      );
-
-      navigate(`/groups/${groupId}`);
-    } catch (error) {
-      console.error('Error joining group:', error);
-      setError(error.message || 'Failed to join group. Please try again.');
-    } finally {
-      setJoinLoading((prev) => ({ ...prev, [groupId]: false }));
+    if (response.ok) {
+      const data = await response.json();
+      setGroups(Array.isArray(data) ? data : data.groups || []);
+    } else {
+      throw new Error(`HTTP error! status: ${response.status}`);
     }
-  };
+  } catch (error) {
+    console.error('Error fetching groups:', error);
+    setError('Cannot connect to server. Please try again.');
+  } finally {
+    setLoading(false);
+  }
+};
+
+ const handleJoinGroup = async (group) => {
+  if (!user?.token) {
+    navigate('/login');
+    return;
+  }
+
+  const groupId = getGroupId(group);
+
+  if (!groupId) {
+    setError('Invalid group ID. Cannot join group.');
+    return;
+  }
+
+  setJoinLoading((prev) => ({ ...prev, [groupId]: true }));
+  try {
+    // ✅ Use Codespace URL instead of localhost:5000
+    const API_BASE_URL = 'https://zany-system-r4wx7j57xprw35wx-5000.app.github.dev';
+    
+    const response = await fetch(`${API_BASE_URL}/api/groups/${groupId}/join`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${user.token}`,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || 'Failed to join group');
+    }
+
+    const joinResponseData = await response.json();
+    console.log('Successfully joined group:', joinResponseData);
+
+    // Update the group state to reflect the user joining
+    setGroups((prevGroups) =>
+      prevGroups.map((g) =>
+        g._id === groupId
+          ? { ...g, members: [...g.members, user], currentMembers: g.currentMembers + 1 }
+          : g
+      )
+    );
+
+    setFilteredGroups((prevFiltered) =>
+      prevFiltered.map((g) =>
+        g._id === groupId
+          ? { ...g, members: [...g.members, user], currentMembers: g.currentMembers + 1 }
+          : g
+      )
+    );
+
+    navigate(`/groups/${groupId}`);
+  } catch (error) {
+    console.error('Error joining group:', error);
+    setError(error.message || 'Failed to join group. Please try again.');
+  } finally {
+    setJoinLoading((prev) => ({ ...prev, [groupId]: false }));
+  }
+};
 
   const getMemberCount = (group) => {
     if (!group) return 0;
@@ -189,75 +181,77 @@ const Home = () => {
     return 0;
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError('');
+const handleSubmit = async (e) => {
+  e.preventDefault();
+  setLoading(true);
+  setError('');
 
-    if (!user?.token) {
+  try {
+    const userJSON = localStorage.getItem('user');
+    if (!userJSON) {
       setError('You must be logged in to create a group');
-      navigate('/login');
+      setLoading(false);
       return;
     }
 
-    if (!groupName.trim()) {
-      setError('Group name is required');
-      return;
+    const user = JSON.parse(userJSON);
+    
+    // ✅ Use your Codespace URL instead of localhost
+    const API_BASE_URL = 'https://zany-system-r4wx7j57xprw35wx-5000.app.github.dev';
+    
+    // ✅ Calculate the actual member limit based on your form logic
+    const actualMemberLimit = memberLimit === 'custom' && customMemberLimit 
+      ? Number(customMemberLimit) 
+      : memberLimit === 'unlimited' 
+        ? 0 
+        : Number(memberLimit);
+    
+    const response = await fetch(`${API_BASE_URL}/api/groups`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${user.token}`,
+      },
+      body: JSON.stringify({
+        name: groupName,
+        price: Number(groupPrice), // ✅ Use groupPrice instead of price
+        currency,
+        memberLimit: actualMemberLimit, // ✅ Use the calculated member limit
+        isPrivate,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Failed to create group');
     }
 
-    const priceValue = parseFloat(groupPrice) || 0;
-    if (priceValue < 0) {
-      setError('Price must be a positive number');
-      return;
-    }
-
-    const maxMembersValue =
-      memberLimit === 'unlimited'
-        ? 0
-        : memberLimit === 'custom'
-        ? parseInt(customMemberLimit) || 0
-        : 0;
-
-    if (memberLimit === 'custom' && maxMembersValue < 2) {
-      setError('Custom member limit must be at least 2');
-      return;
-    }
-
-    const groupData = {
-      name: groupName.trim(),
-      price: priceValue,
-      currency,
-      memberLimit: maxMembersValue,
-      isPrivate,
-    };
-
-    try {
-      const response = await fetch('http://localhost:5000/api/groups', {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${user.token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(groupData),
-      });
-
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.message || 'Failed to create group');
-      }
-
-      const newGroup = await response.json();
-      setGroups((prevGroups) => [newGroup, ...prevGroups]);
-      setFilteredGroups((prevFiltered) => [newGroup, ...prevFiltered]);
-
-      // Reset form and navigate to the new group
-      resetForm();
-      navigate(`/groups/${newGroup._id}`);
-    } catch (error) {
-      console.error('Error creating group:', error);
-      setError(error.message || 'An error occurred while creating the group');
-    }
-  };
-
+    const newGroup = await response.json();
+    
+    // Update local storage and state
+    const existingGroups = JSON.parse(localStorage.getItem('groups') || '[]');
+    const updatedGroups = [...existingGroups, newGroup];
+    localStorage.setItem('groups', JSON.stringify(updatedGroups));
+    
+    setGroups(updatedGroups);
+    setShowCreateForm(false);
+    
+    // ✅ Reset form with correct variable names
+    setGroupName('');
+    setGroupPrice('');
+    setCurrency('USD');
+    setMemberLimit('unlimited');
+    setCustomMemberLimit('');
+    setIsPrivate(false);
+    
+    alert('Group created successfully!');
+  } catch (error) {
+    console.error('Error creating group:', error);
+    setError(error.message || 'Failed to create group');
+  } finally {
+    setLoading(false);
+  }
+};
   const resetForm = () => {
     setGroupName('');
     setGroupPrice('');

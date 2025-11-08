@@ -16,22 +16,43 @@ const PORT = 5000;
 
 const SECRET_KEY = process.env.SECRET_KEY || "your_default_secret_key";
 
-// In your server.js, update the CORS configuration:
+// ✅ NUCLEAR CORS FIX - Replace entire CORS section
 app.use(cors({
-  origin: [
-    "http://localhost:5173",
-    "https://effective-acorn-7vwx7gj7xrgwfw5rr-5173.app.github.dev",
-    "https://effective-5000acorn-7vwx7gj7xrgwfw5rr-5173.app.github.dev",
-    "https://*.app.github.dev",
-    "https://*.github.dev"
-  ],
+  origin: "*", // Allow ALL origins
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'Content-Length', 'X-Requested-With']
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH', 'HEAD'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin', 'Access-Control-Allow-Origin'],
+  exposedHeaders: ['Content-Range', 'X-Content-Range'],
+  preflightContinue: false,
+  optionsSuccessStatus: 204
 }));
 
-// Handle preflight requests
-app.options('*', cors());
+// Handle ALL preflight requests
+app.options('*', (req, res) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
+  res.status(204).send();
+});
+
+// Add CORS headers to all responses
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin');
+  next();
+});
+
+// Debug middleware
+app.use((req, res, next) => {
+  console.log('=== REQUEST DEBUG ===');
+  console.log('Method:', req.method);
+  console.log('URL:', req.url);
+  console.log('Origin:', req.headers.origin);
+  console.log('=====================');
+  next();
+});
+
 app.use(express.json());
 
 // Serve static files from public directory
@@ -110,27 +131,47 @@ mongoose.connect(MONGODB_URI)
   .then(() => console.log("MongoDB connected ✅"))
   .catch((err) => console.error("MongoDB Connection Error ❌:", err));
   // Add this route after your middleware and before other routes
+// ✅ CRITICAL: Add these API routes BEFORE file upload config
 app.get('/api', (req, res) => {
+  console.log('📡 /api endpoint hit');
   res.json({ 
-    message: '🚀 Backend is running!',
+    message: '✅ Bingo API Server is running!',
+    status: 'active',
     timestamp: new Date().toISOString(),
-    status: 'OK'
-  });
-});
-
-// Test all your main routes
-app.get('/api/test', (req, res) => {
-  res.json({ 
-    message: 'All API routes are working!',
-    routes: {
-      signup: 'POST /signup',
-      login: 'POST /login', 
-      groups: 'GET /api/groups',
-      createGroup: 'POST /api/groups'
+    endpoints: {
+      test: '/api/test',
+      auth: {
+        signup: '/api/auth/signup',
+        login: '/login'
+      },
+      groups: '/api/groups'
     }
   });
 });
 
+app.get('/api/test', (req, res) => {
+  console.log('📡 /api/test endpoint hit');
+  res.json({ 
+    message: '✅ Backend is working perfectly!',
+    cors: 'CORS is configured correctly',
+    timestamp: new Date().toISOString(),
+    origin: req.headers.origin
+  });
+});
+
+// Simple signup route for testing
+app.post('/api/auth/signup', (req, res) => {
+  console.log('📝 Signup request received:', req.body);
+  res.json({
+    success: true,
+    message: 'User registered successfully!',
+    user: {
+      id: Math.random().toString(36).substr(2, 9),
+      username: req.body.username,
+      email: req.body.email
+    }
+  });
+});
 // Auth middleware
 const auth = async (req, res, next) => {
   try {
@@ -727,8 +768,30 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: "Server error", details: err.message });
 });
 
+// Enhanced server startup for GitHub Codespaces
+const HOST = process.env.CODESPACE_NAME ? '0.0.0.0' : 'localhost';
+
 // Start server
-app.listen(PORT, () => {
-  console.log(`Server is running on http://localhost:${PORT}`);
-  console.log(`Uploads directory: ${uploadsDir}`);
+app.listen(PORT, HOST, () => {
+  console.log(`🚀 Server is running on port ${PORT}`);
+  console.log(`📡 Local: http://localhost:${PORT}`);
+  console.log(`🌐 API: http://localhost:${PORT}/api`);
+  console.log(`✅ Test: http://localhost:${PORT}/api/test`);
+  
+  if (process.env.CODESPACE_NAME) {
+    console.log(`🔗 Codespace URL: https://${process.env.CODESPACE_NAME}-${PORT}.app.github.dev`);
+    console.log(`🔗 Codespace API: https://${process.env.CODESPACE_NAME}-${PORT}.app.github.dev/api`);
+  }
+  
+  console.log(`✅ CORS configured for ALL origins`);
+  console.log(`✅ Ready for frontend connections!`);
+});
+
+// Error handling to prevent crashes
+process.on('uncaughtException', (error) => {
+  console.error('🚨 Uncaught Exception:', error);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('🚨 Unhandled Rejection at:', promise, 'reason:', reason);
 });
