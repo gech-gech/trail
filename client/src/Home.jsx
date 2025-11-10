@@ -87,7 +87,7 @@ const Home = () => {
     const user = JSON.parse(userJSON);
     
     // Use your Codespace URL
-    const API_BASE_URL = 'https://zany-system-r4wx7j57xprw35wx-5000.app.github.dev';
+    const API_BASE_URL = 'https://redesigned-meme-x5x4rjgr499ghpqw4-5000.app.github.dev';
     
     const response = await fetch(`${API_BASE_URL}/api/groups`, {
       headers: { 
@@ -126,7 +126,7 @@ const Home = () => {
   setJoinLoading((prev) => ({ ...prev, [groupId]: true }));
   try {
     // ✅ Use Codespace URL instead of localhost:5000
-    const API_BASE_URL = 'https://zany-system-r4wx7j57xprw35wx-5000.app.github.dev';
+    const API_BASE_URL = 'https://redesigned-meme-x5x4rjgr499ghpqw4-5000.app.github.dev';
     
     const response = await fetch(`${API_BASE_URL}/api/groups/${groupId}/join`, {
       method: 'POST',
@@ -197,7 +197,7 @@ const handleSubmit = async (e) => {
     const user = JSON.parse(userJSON);
     
     // ✅ Use your Codespace URL instead of localhost
-    const API_BASE_URL = 'https://zany-system-r4wx7j57xprw35wx-5000.app.github.dev';
+    const API_BASE_URL = 'https://redesigned-meme-x5x4rjgr499ghpqw4-5000.app.github.dev';
     
     // ✅ Calculate the actual member limit based on your form logic
     const actualMemberLimit = memberLimit === 'custom' && customMemberLimit 

@@ -7,7 +7,7 @@ const GroupPage = () => {
   const navigate = useNavigate();
   
   // ✅ Add API Base URL constant
-  const API_BASE_URL = 'https://zany-system-r4wx7j57xprw35wx-5000.app.github.dev';
+  const API_BASE_URL = 'https://redesigned-meme-x5x4rjgr499ghpqw4-5000.app.github.dev';
   
   const [group, setGroup] = useState(null);
   const [user, setUser] = useState(null);

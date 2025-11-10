@@ -325,7 +325,79 @@ app.post('/api/groups/:groupId/call-number', async (req, res) => {
     res.status(500).json({ message: 'Internal server error' });
   }
 });
+// Enhanced add-card route with better error handling
+app.post('/api/groups/:groupId/add-card', auth, async (req, res) => {
+  const { groupId } = req.params;
+  const { cards } = req.body;
 
+  console.log('📝 Add card request received for group:', groupId);
+  console.log('User ID:', req.user._id);
+  console.log('Number of cards to add:', cards?.length);
+
+  if (!cards || !Array.isArray(cards)) {
+    return res.status(400).json({ message: 'No cards provided' });
+  }
+
+  try {
+    const group = await Group.findById(groupId);
+    if (!group) {
+      return res.status(404).json({ message: 'Group not found' });
+    }
+
+    // Check if user is a member
+    const isMember = group.members.some(memberId => 
+      memberId.toString() === req.user._id.toString()
+    );
+
+    if (!isMember) {
+      return res.status(403).json({ message: 'You are not a member of this group' });
+    }
+
+    // Add user info to each card
+    const cardsWithUser = cards.map(card => ({
+      ...card,
+      userId: req.user._id,
+      userName: req.user.name || req.user.username,
+      userEmail: req.user.email,
+      addedAt: new Date().toISOString()
+    }));
+
+    // Initialize bingoCards array if it doesn't exist
+    if (!group.bingoCards) {
+      group.bingoCards = [];
+    }
+
+    // Filter out cards that might already exist (by id)
+    const existingCardIds = new Set(group.bingoCards.map(card => card.id));
+    const newCards = cardsWithUser.filter(card => !existingCardIds.has(card.id));
+
+    if (newCards.length === 0) {
+      return res.status(400).json({ message: 'All cards already exist in the group' });
+    }
+
+    // Add new cards
+    group.bingoCards.push(...newCards);
+    
+    await group.save();
+
+    console.log(`✅ Added ${newCards.length} cards to group ${groupId}`);
+    console.log(`📊 Total cards in group: ${group.bingoCards.length}`);
+
+    res.json({ 
+      success: true, 
+      message: 'Cards added successfully',
+      addedCount: newCards.length,
+      totalCards: group.bingoCards.length
+    });
+  } catch (error) {
+    console.error('❌ Error adding cards:', error);
+    res.status(500).json({ 
+      message: 'Internal server error',
+      error: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
+  }
+});
 // Helper function to check for a winner
 async function checkWinner(group) {
   // Check each card to see if it matches all called numbers
@@ -500,12 +572,15 @@ app.post("/login", async (req, res) => {
     
     const token = jwt.sign({ id: user._id }, SECRET_KEY, { expiresIn: "1h" });
     
+    // ✅ FIX: Use your Codespace URL instead of localhost
+    const photoUrl = user.photo ? `https://redesigned-meme-x5x4rjgr499ghpqw4-5000.app.github.dev${user.photo}` : "/default-avatar.png";
+    
     res.json({
       token,
       user: {
         id: user._id,
         name: user.username,
-        photo: user.photo ? `http://localhost:5000${user.photo}` : "/default-avatar.png",
+        photo: photoUrl,
       },
     });
   } catch (error) {
