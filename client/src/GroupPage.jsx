@@ -668,6 +668,20 @@ const GroupPage = () => {
         <div className="group-header">
           <div className="group-title-section">
             <h1>{group.name}</h1>
+            {isCreator() && (
+            <div className="numbercall">
+              <label htmlFor="numberCallingMechanism">Number Calling Mechanism:</label>
+              <select
+                id="numberCallingMechanism"
+                value={numberCallingMechanism}
+                onChange={handleMechanismChange}
+              >
+                <option value="time-based">Automatic (Time-Based)</option>
+                <option value="card-limit">Card Limit</option>
+                <option value="manual">Manual (Creator Calls)</option>
+              </select>
+            </div>
+          )}
             {group.isPrivate && <span className="private-badge">Private</span>}
           </div>
           <div className="group-meta">
@@ -681,6 +695,17 @@ const GroupPage = () => {
                   ? group.price * group.bingoCards.length
                   : group.price * (members.length || 1)}
               </div>
+              <div className={`circle ${calledNumbers.length > 0 ? 'has-numbers' : 'empty'}`}>
+            {calledNumbers.length > 0 ? (
+              <div className="called-numbers-list">
+                <span className="called-number">{calledNumbers[calledNumbers.length - 1]}</span>
+              </div>
+            ) : (
+              <p></p>
+            )}
+            <div className="segment"></div>
+            <div className="inner-dots"></div>
+          </div>
               <div className="prize-board-members">
                 ({members.length} member{members.length !== 1 ? 's' : ''} playing)
               </div>
@@ -768,26 +793,10 @@ const GroupPage = () => {
                 </div>
               )}
             </div>
-            <div className="group-price">
-              <span className="label">Minimum Amount:</span>
-              <span className="value">{getCurrencySymbol(group.currency)}{group.price}</span>
-            </div>
+           
           </div>
 
-          {isCreator() && (
-            <div className="form-group">
-              <label htmlFor="numberCallingMechanism">Number Calling Mechanism:</label>
-              <select
-                id="numberCallingMechanism"
-                value={numberCallingMechanism}
-                onChange={handleMechanismChange}
-              >
-                <option value="time-based">Automatic (Time-Based)</option>
-                <option value="card-limit">Card Limit</option>
-                <option value="manual">Manual (Creator Calls)</option>
-              </select>
-            </div>
-          )}
+          
           {showTimerInput && isCreator() && (
             <div className="timer-input">
               <label htmlFor="timer">Set Timer (in seconds):</label>
@@ -837,19 +846,7 @@ const GroupPage = () => {
           </>
         )}
 
-        <div className="circle-container">
-          <div className={`circle ${calledNumbers.length > 0 ? 'has-numbers' : 'empty'}`}>
-            {calledNumbers.length > 0 ? (
-              <div className="called-numbers-list">
-                <span className="called-number">{calledNumbers[calledNumbers.length - 1]}</span>
-              </div>
-            ) : (
-              <p></p>
-            )}
-            <div className="segment"></div>
-            <div className="inner-dots"></div>
-          </div>
-        </div>
+       
         <div className="cards-container" style={{ marginTop: '20px' }}>
           {selectedCards.length > 0 ? (
             selectedCards.map((card, cardIndex) => (

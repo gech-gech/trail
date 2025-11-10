@@ -303,7 +303,7 @@ const handleSelectClick = async () => {
       }
 
       const data = await response.json();
-      console.log('✅ Cards added successfully:', data);
+    
 
       alert(`Cards added successfully to the group! Added ${data.addedCount} cards.`);
       
@@ -344,24 +344,47 @@ const handleSelectClick = async () => {
       <header className="header">
         <div className="profile-section">
           <div className="profile">
-            {currentUser?.photo ? (
-              <img 
-                src={getProfilePhotoUrl(currentUser.photo)} 
-                alt="Profile" 
-                onError={(e) => {
-                  console.error('❌ Failed to load profile image:', e.target.src);
-                  e.target.style.display = 'none';
-                }}
-                onLoad={() => console.log('✅ Profile image loaded successfully')}
-              />
-            ) : null}
-            <div className="avatar-fallback">{getInitials(currentUser?.name)}</div>
-            <h2>{currentUser?.name ? currentUser.name.toUpperCase() : "USER"}</h2>
+            {user?.photo ? (
+              <img src={user.photo} alt="Profile" />
+            ) : (
+              <div className="avatar-fallback">{getInitials(user?.name)}</div>
+            )}
+            <h2>{user?.name ? user.name.toUpperCase() : "USER"}</h2>
           </div>
         </div>
-        <div className="title-section">
-          <h1>Bingo</h1>
-        </div>
+        
+        {/* Navigation Menu - Only Bingo works */}
+        <nav className="game-navigation">
+          <div className="nav-links">
+            <a href="" className="nav-link active">
+              🎯 Bingo Game
+            </a>
+            <a href="#" className="nav-link" onClick={(e) => {
+              e.preventDefault();
+              alert('Digital Lottery is under development! Coming soon...');
+            }}>
+              🎫 Digital Lottery
+            </a>
+            <a href="#" className="nav-link" onClick={(e) => {
+              e.preventDefault();
+              alert('Scratch Cards are under development! Coming soon...');
+            }}>
+              🎴 Scratch Cards
+            </a>
+            <a href="#" className="nav-link" onClick={(e) => {
+              e.preventDefault();
+              alert('Raffle Draw is under development! Coming soon...');
+            }}>
+              🏆 Raffle Draw
+            </a>
+            <a href="#" className="nav-link" onClick={(e) => {
+              e.preventDefault();
+              alert('Slot Machine is under development! Coming soon...');
+            }}>
+              🎰 Slot Machine
+            </a>
+          </div>
+        </nav>
       </header>
 
       <div className="card-container">

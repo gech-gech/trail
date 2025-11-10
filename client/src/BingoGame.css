@@ -365,3 +365,45 @@ h2{
 .loading-container button:hover {
   background: rgba(255, 255, 255, 0.3);
 }
+.game-navigation {
+  margin: 20px 0;
+  padding: 0 20px;
+}
+
+.nav-links {
+  display: flex;
+  gap: 15px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.nav-link {
+  padding: 12px 24px;
+  background: #4a90e2;
+  color: white;
+  text-decoration: none;
+  border-radius: 25px;
+  transition: all 0.3s ease;
+  font-weight: bold;
+  font-size: 16px;
+}
+
+.nav-link:hover {
+  background: #357ae8;
+  transform: translateY(-2px);
+}
+
+.nav-link.active {
+  background: #1ad609;
+}
+
+/* Style for disabled links */
+.nav-link:not(.active) {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.nav-link:not(.active):hover {
+  background: #4a90e2;
+  transform: none;
+}
