@@ -475,3 +475,213 @@ exports.restartGame = async (req, res) => {
     res.status(500).json({ message: 'Failed to restart game' });
   }
 };
+// Call number for bingo game
+exports.callNumber = async (req, res) => {
+  const { groupId } = req.params;
+
+  try {
+    const group = await Group.findById(groupId);
+    if (!group) {
+      return res.status(404).json({ message: 'Group not found' });
+    }
+
+    if (!group.gameStarted) {
+      return res.status(400).json({ message: 'The game has not started yet' });
+    }
+
+    if (!group.bingoCards || group.bingoCards.length === 0) {
+      return res.status(400).json({ message: 'No cards stored for this group' });
+    }
+
+    // Extract all letter-number combinations from the stored bingo cards
+    const allCombinations = group.bingoCards.flatMap((card) =>
+      Object.entries(card.numbers).flatMap(([letter, numbers]) =>
+        numbers.map((num) => `${letter}${num}`)
+      )
+    );
+
+    // Filter out already called combinations
+    const remainingCombinations = allCombinations.filter(
+      (combination) => !group.calledNumbers.includes(combination)
+    );
+
+    if (remainingCombinations.length === 0) {
+      return res.json({
+        success: true,
+        message: 'All numbers have been called',
+        calledNumbers: group.calledNumbers,
+      });
+    }
+
+    // Call a random combination
+    const randomIndex = Math.floor(Math.random() * remainingCombinations.length);
+    const calledNumber = remainingCombinations[randomIndex];
+
+    // Update the group with the called combination
+    group.calledNumbers.push(calledNumber);
+    await group.save();
+
+    console.log('🎲 Number called:', calledNumber);
+    console.log('📊 Total called numbers:', group.calledNumbers.length);
+
+    // Check for a winner
+    const winner = group.bingoCards.find((card) =>
+      Object.entries(card.numbers).every(([letter, numbers]) =>
+        numbers.every((num) => group.calledNumbers.includes(`${letter}${num}`))
+      )
+    );
+
+    if (winner) {
+      console.log('🎉 Winner found:', winner.userName);
+      return res.json({
+        success: true,
+        calledNumber: calledNumber,
+        calledNumbers: group.calledNumbers,
+        winner: {
+          _id: winner._id,
+          name: winner.userName,
+          email: winner.userEmail
+        },
+      });
+    }
+
+    res.json({ 
+      success: true, 
+      calledNumber: calledNumber, 
+      calledNumbers: group.calledNumbers 
+    });
+  } catch (error) {
+    console.error('Error calling number:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};
+// Set card limit
+exports.setCardLimit = async (req, res) => {
+  const { groupId } = req.params;
+  const { cardLimit } = req.body;
+
+  if (!cardLimit || cardLimit <= 0) {
+    return res.status(400).json({ message: 'Invalid card limit' });
+  }
+
+  try {
+    const group = await Group.findById(groupId);
+    if (!group) {
+      return res.status(404).json({ message: 'Group not found' });
+    }
+
+    group.cardLimit = cardLimit;
+    await group.save();
+
+    // Check if the card limit is reached with bingo cards
+    const currentCardCount = group.bingoCards ? group.bingoCards.length : 0;
+    
+    console.log(`Card limit check: ${currentCardCount}/${cardLimit} cards`);
+    
+    if (currentCardCount >= cardLimit && !group.gameStarted) {
+      group.gameStarted = true;
+      await group.save();
+      console.log(`🎮 Game started for group ${groupId} - Card limit reached: ${currentCardCount}/${cardLimit}`);
+      
+      return res.json({ 
+        success: true, 
+        updatedGroup: group,
+        gameStarted: true,
+        message: `Game started! Card limit reached (${currentCardCount}/${cardLimit})`
+      });
+    }
+
+    res.json({ 
+      success: true, 
+      updatedGroup: group,
+      gameStarted: false,
+      message: `Card limit set to ${cardLimit}. Current cards: ${currentCardCount}/${cardLimit}`
+    });
+  } catch (error) {
+    console.error('Error setting card limit:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+// Check card limit
+exports.checkCardLimit = async (req, res) => {
+  const { groupId } = req.params;
+
+  try {
+    const group = await Group.findById(groupId);
+    if (!group) {
+      return res.status(404).json({ message: 'Group not found' });
+    }
+
+    // If game is already started, no need to check
+    if (group.gameStarted) {
+      return res.json({ 
+        gameStarted: true, 
+        message: 'Game already started' 
+      });
+    }
+
+    // Check if card limit is set and reached
+    if (group.cardLimit && group.cardLimit > 0) {
+      const currentCardCount = group.bingoCards ? group.bingoCards.length : 0;
+      
+      console.log(`Card limit check: ${currentCardCount}/${group.cardLimit}`);
+      
+      if (currentCardCount >= group.cardLimit) {
+        group.gameStarted = true;
+        await group.save();
+        
+        console.log(`🎮 Game auto-started for group ${groupId} - Cards: ${currentCardCount}/${group.cardLimit}`);
+        
+        return res.json({ 
+          gameStarted: true,
+          bingoCards: group.bingoCards,
+          message: `Game started! Card limit reached (${currentCardCount}/${group.cardLimit})`
+        });
+      }
+      
+      return res.json({ 
+        gameStarted: false,
+        currentCards: currentCardCount,
+        cardLimit: group.cardLimit,
+        message: `Not yet reached: ${currentCardCount}/${group.cardLimit}`
+      });
+    }
+
+    res.json({ 
+      gameStarted: false,
+      message: 'No card limit set'
+    });
+  } catch (error) {
+    console.error('Error checking card limit:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+// Start game manually
+exports.startGame = async (req, res) => {
+  const { groupId } = req.params;
+
+  try {
+    const group = await Group.findById(groupId);
+    if (!group) {
+      return res.status(404).json({ message: 'Group not found' });
+    }
+
+    if (group.gameStarted) {
+      return res.status(400).json({ message: 'Game already started' });
+    }
+
+    group.gameStarted = true;
+    await group.save();
+
+    res.json({ 
+      success: true, 
+      message: 'Game started successfully',
+      updatedGroup: group 
+    });
+  } catch (error) {
+    console.error('Error starting game:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};

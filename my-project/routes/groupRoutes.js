@@ -1,16 +1,16 @@
 const express = require('express');
 const router = express.Router();
-const Group = require('../models/Group'); // Import the Group model
+const Group = require('../models/Group');
 const auth = require('../middleware/auth');
-const { protect } = require('../middleware/auth'); // Import the protect middleware
-const groupController = require('../controllers/groupController'); // Ensure this is correctly imported
-const multer = require('multer'); // Import Multer for file uploads
+const { protect } = require('../middleware/auth');
+const groupController = require('../controllers/groupController');
+const multer = require('multer');
 const path = require('path');
 
 // Configure Multer for file uploads
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, 'uploads/prizes'); // Ensure this matches the directory path
+    cb(null, 'uploads/prizes');
   },
   filename: (req, file, cb) => {
     cb(null, `${Date.now()}-${file.originalname}`);
@@ -29,12 +29,28 @@ const upload = multer({
   },
 });
 
-// Route to set the prize
+// ✅ ADD THE MISSING ROUTES:
+
+// Call number for bingo game (this is what your frontend is calling)
+router.post('/:groupId/call-number', protect, groupController.callNumber);
+
+// Set card limit
+router.post('/:groupId/set-card-limit', protect, groupController.setCardLimit);
+
+// Check card limit
+router.post('/:groupId/check-card-limit', protect, groupController.checkCardLimit);
+
+// Start game manually
+router.post('/:groupId/start-game', protect, groupController.startGame);
+
+// ✅ EXISTING ROUTES (keep these):
+
+// Set prize
 router.post(
   '/:groupId/set-prize',
   protect,
-  upload.single('prizeFile'), // Handle file uploads
-  groupController.setPrize // Call the setPrize function
+  upload.single('prizeFile'),
+  groupController.setPrize
 );
 
 // Add card to group
@@ -116,9 +132,6 @@ router.post('/:groupId/join', protect, async (req, res) => {
   }
 });
 
-// Start game and save bingo cards
-router.post('/:groupId/start-game', protect, groupController.startGame);
-
 // Leave a group
 router.post('/:groupId/leave', protect, async (req, res) => {
   try {
@@ -140,11 +153,81 @@ router.post('/:groupId/leave', protect, async (req, res) => {
     res.status(500).json({ message: 'Error leaving group' });
   }
 });
+// Add these routes after your existing routes:
 
-// Route to call the next Bingo number
-router.post('/:groupId/call-number', protect, groupController.callNextNumber);
+// Call number route
+router.post('/:groupId/call-number', protect, async (req, res) => {
+  try {
+    console.log('🎯 CALL NUMBER ROUTE HIT');
+    const { groupId } = req.params;
+    
+    const group = await Group.findById(groupId);
+    if (!group) {
+      return res.status(404).json({ message: 'Group not found' });
+    }
 
-// Route to restart the game
+    // Generate random number
+    const letters = ['B', 'I', 'N', 'G', 'O'];
+    const letter = letters[Math.floor(Math.random() * letters.length)];
+    const number = Math.floor(Math.random() * 75) + 1;
+    const calledNumber = `${letter}${number}`;
+
+    // Update group
+    if (!group.calledNumbers) group.calledNumbers = [];
+    group.calledNumbers.push(calledNumber);
+    await group.save();
+
+    console.log('✅ Number called:', calledNumber);
+
+    res.json({
+      success: true,
+      calledNumber: calledNumber,
+      calledNumbers: group.calledNumbers,
+      message: `Number ${calledNumber} called successfully`
+    });
+
+  } catch (error) {
+    console.error('❌ Error calling number:', error);
+    res.status(500).json({ message: 'Error calling number: ' + error.message });
+  }
+});
+
+// Set card limit route
+router.post('/:groupId/set-card-limit', protect, async (req, res) => {
+  try {
+    console.log('🎯 SET CARD LIMIT ROUTE HIT');
+    const { groupId } = req.params;
+    const { cardLimit } = req.body;
+
+    const group = await Group.findById(groupId);
+    if (!group) {
+      return res.status(404).json({ message: 'Group not found' });
+    }
+
+    group.cardLimit = cardLimit;
+    await group.save();
+
+    res.json({
+      success: true,
+      updatedGroup: group,
+      message: `Card limit set to ${cardLimit}`
+    });
+
+  } catch (error) {
+    console.error('❌ Error setting card limit:', error);
+    res.status(500).json({ message: 'Error setting card limit: ' + error.message });
+  }
+});
+
+// ✅ REMOVE OR UPDATE DUPLICATE ROUTES:
+
+// Remove this duplicate route (you already have one above):
+// router.post('/:groupId/start-game', protect, groupController.startGame);
+
+// Remove this old route (replace with the new callNumber):
+// router.post('/:groupId/call-number', protect, groupController.callNextNumber);
+
+// Restart game
 router.post('/:groupId/restart-game', protect, groupController.restartGame);
 
-module.exports = router; 
+module.exports = router;

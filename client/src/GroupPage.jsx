@@ -106,7 +106,41 @@ const GroupPage = () => {
       setError(error.message || 'Failed to set prize');
     }
   };
+const handleStartGame = async () => {
+  if (!user?.token) {
+    setError('You must be logged in to start the game');
+    return;
+  }
 
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/groups/${groupId}/start-game`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${user.token}`,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Failed to start game');
+    }
+
+    const data = await response.json();
+    setGroup(prev => ({ ...prev, gameStarted: true }));
+    alert('🎮 Game started successfully!');
+    
+    // If using automatic mechanisms, start calling numbers
+    if (numberCallingMechanism !== 'manual') {
+      setTimeout(() => {
+        handleCallNumber();
+      }, 2000);
+    }
+  } catch (error) {
+    console.error('Error starting game:', error);
+    setError(error.message || 'Failed to start game');
+  }
+};
   useEffect(() => {
     if (user?.token) {
       fetchUserCards();
@@ -289,43 +323,90 @@ const GroupPage = () => {
     return () => clearInterval(countdown);
   }, [numberCallingMechanism, timerInput]);
 
-  // Combined useEffect for number calling mechanisms
-  useEffect(() => {
-    let interval;
-    if ((numberCallingMechanism === 'time-based' || numberCallingMechanism === 'card-limit')) {
-      interval = setInterval(() => {
-        handleCallNumber();
-      }, 5000);
+  // Combined useEffect for number calling mechanisms - FIXED
+useEffect(() => {
+  let interval;
+  
+  console.log('🔄 Number calling mechanism check:', {
+    gameStarted: group?.gameStarted,
+    mechanism: numberCallingMechanism,
+    winnerDeclared: winnerDeclared
+  });
+  
+  // Only start calling if game has started and not in manual mode and no winner
+  if (group?.gameStarted && numberCallingMechanism !== 'manual' && !winnerDeclared) {
+    console.log('🚀 Starting automatic number calling...');
+    
+    interval = setInterval(() => {
+      handleCallNumber();
+    }, 5000);
+  }
+  
+  return () => {
+    if (interval) {
+      console.log('🛑 Clearing number calling interval');
+      clearInterval(interval);
     }
-    return () => clearInterval(interval);
-  }, [numberCallingMechanism]);
+  };
+}, [numberCallingMechanism, group?.gameStarted, winnerDeclared]);
 
-  // Card limit check and auto start
-  useEffect(() => {
-    if (numberCallingMechanism === 'card-limit' && group?.cardLimit) {
-      const checkCardLimit = async () => {
-        try {
-          const response = await fetch(`${API_BASE_URL}/api/groups/${groupId}/check-card-limit`, {
-            method: 'POST',
-            headers: {
-              Authorization: `Bearer ${user.token}`,
-              'Content-Type': 'application/json',
-            },
-          });
-          const data = await response.json();
-          if (data.gameStarted) {
-            alert('The game has started automatically!');
-            handleCallNumber();
-          }
-        } catch (error) {
-          console.error('Error checking card limit:', error);
+ // Card limit check and auto start - FIXED
+useEffect(() => {
+  if (numberCallingMechanism === 'card-limit' && group?.cardLimit && !group.gameStarted) {
+    const checkCardLimitAndStart = async () => {
+      try {
+        console.log('🃏 Checking card limit...', {
+          limit: group.cardLimit,
+          currentCards: group.bingoCards?.length,
+          gameStarted: group.gameStarted
+        });
+
+        const response = await fetch(`${API_BASE_URL}/api/groups/${groupId}/check-card-limit`, {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${user.token}`,
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (!response.ok) {
+          console.log('Card limit check failed');
+          return;
         }
-      };
 
-      const interval = setInterval(checkCardLimit, 1000);
-      return () => clearInterval(interval);
-    }
-  }, [numberCallingMechanism, group, group?.cardLimit, groupId, user?.token]);
+        const data = await response.json();
+        console.log('🃏 Card limit check response:', data);
+
+        if (data.gameStarted && !group.gameStarted) {
+          console.log('🎮 Card limit reached! Starting game...');
+          
+          // Update the group state to reflect game started
+          setGroup(prev => ({ 
+            ...prev, 
+            gameStarted: true,
+            bingoCards: data.bingoCards || prev.bingoCards
+          }));
+          
+          // Show success message
+          setTimeout(() => {
+            alert(`🎮 Game Started! Card limit reached (${group.bingoCards?.length || 0}/${group.cardLimit} cards)`);
+          }, 500);
+          
+          // Start calling numbers after a short delay
+          setTimeout(() => {
+            handleCallNumber();
+          }, 2000);
+        }
+      } catch (error) {
+        console.error('Error in card limit check:', error);
+      }
+    };
+
+    // Check every 3 seconds
+    const interval = setInterval(checkCardLimitAndStart, 3000);
+    return () => clearInterval(interval);
+  }
+}, [numberCallingMechanism, group, groupId, user?.token]);
 
   const isCreator = () => {
     if (!user || !group || !group.createdBy) return false;
@@ -441,35 +522,55 @@ const GroupPage = () => {
   };
 
   const handleSetCardLimit = async () => {
-    if (!user?.token) {
-      setError('You must be logged in to set the card limit');
-      return;
+  if (!user?.token) {
+    setError('You must be logged in to set the card limit');
+    return;
+  }
+
+  if (cardLimitInput < 1) {
+    setError('Card limit must be at least 1');
+    return;
+  }
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/groups/${groupId}/set-card-limit`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${user.token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ 
+        cardLimit: cardLimitInput
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Failed to set card limit');
     }
 
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/groups/${groupId}/set-card-limit`, {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${user.token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ cardLimit: cardLimitInput }),
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(errorText || 'Failed to set card limit');
-      }
-
-      const updatedGroup = await response.json();
-      setGroup(updatedGroup);
-      setShowCardLimitInput(false);
-      alert('Card limit set successfully!');
-    } catch (error) {
-      console.error('Error setting card limit:', error);
-      setError(error.message || 'Failed to set card limit');
+    const data = await response.json();
+    console.log('Card limit set response:', data);
+    
+    setGroup(data.updatedGroup || data);
+    setShowCardLimitInput(false);
+    
+    // Check if game should start immediately
+    const currentCardCount = data.updatedGroup?.bingoCards?.length || data.bingoCards?.length || 0;
+    if (currentCardCount >= cardLimitInput && !data.gameStarted) {
+      // Start game immediately if limit is already reached
+      setTimeout(() => {
+        handleStartGame();
+      }, 1000);
+      alert(`Card limit set! Game starting now (${currentCardCount}/${cardLimitInput} cards)`);
+    } else {
+      alert(`Card limit set to ${cardLimitInput}! Game will start automatically when reached. Current: ${currentCardCount}/${cardLimitInput}`);
     }
-  };
+  } catch (error) {
+    console.error('Error setting card limit:', error);
+    setError(error.message || 'Failed to set card limit');
+  }
+};
 
   const handleAddCard = () => {
     navigate(`/simple`, {

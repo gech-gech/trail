@@ -325,77 +325,92 @@ app.post('/api/groups/:groupId/call-number', async (req, res) => {
     res.status(500).json({ message: 'Internal server error' });
   }
 });
-// Enhanced add-card route with better error handling
-app.post('/api/groups/:groupId/add-card', auth, async (req, res) => {
-  const { groupId } = req.params;
-  const { cards } = req.body;
-
-  console.log('📝 Add card request received for group:', groupId);
-  console.log('User ID:', req.user._id);
-  console.log('Number of cards to add:', cards?.length);
-
-  if (!cards || !Array.isArray(cards)) {
-    return res.status(400).json({ message: 'No cards provided' });
-  }
-
+// Start game manually
+app.post('/api/groups/:groupId/start-game', auth, async (req, res) => {
   try {
+    const { groupId } = req.params;
+    console.log('🚀 Starting game for group:', groupId);
+
     const group = await Group.findById(groupId);
     if (!group) {
       return res.status(404).json({ message: 'Group not found' });
     }
 
-    // Check if user is a member
-    const isMember = group.members.some(memberId => 
-      memberId.toString() === req.user._id.toString()
-    );
-
-    if (!isMember) {
-      return res.status(403).json({ message: 'You are not a member of this group' });
+    if (group.gameStarted) {
+      return res.status(400).json({ message: 'Game already started' });
     }
 
-    // Add user info to each card
-    const cardsWithUser = cards.map(card => ({
-      ...card,
-      userId: req.user._id,
-      userName: req.user.name || req.user.username,
-      userEmail: req.user.email,
-      addedAt: new Date().toISOString()
-    }));
-
-    // Initialize bingoCards array if it doesn't exist
-    if (!group.bingoCards) {
-      group.bingoCards = [];
-    }
-
-    // Filter out cards that might already exist (by id)
-    const existingCardIds = new Set(group.bingoCards.map(card => card.id));
-    const newCards = cardsWithUser.filter(card => !existingCardIds.has(card.id));
-
-    if (newCards.length === 0) {
-      return res.status(400).json({ message: 'All cards already exist in the group' });
-    }
-
-    // Add new cards
-    group.bingoCards.push(...newCards);
-    
+    group.gameStarted = true;
     await group.save();
 
-    console.log(`✅ Added ${newCards.length} cards to group ${groupId}`);
-    console.log(`📊 Total cards in group: ${group.bingoCards.length}`);
+    console.log('✅ Game started for group:', groupId);
+    
+    res.json({
+      success: true,
+      message: 'Game started successfully',
+      updatedGroup: group
+    });
+
+  } catch (error) {
+    console.error('Error starting game:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+// Check card limit
+app.post('/api/groups/:groupId/check-card-limit', auth, async (req, res) => {
+  try {
+    const { groupId } = req.params;
+    console.log('🃏 Checking card limit for group:', groupId);
+
+    const group = await Group.findById(groupId);
+    if (!group) {
+      return res.status(404).json({ message: 'Group not found' });
+    }
+
+    // If game is already started
+    if (group.gameStarted) {
+      return res.json({ 
+        gameStarted: true, 
+        message: 'Game already started' 
+      });
+    }
+
+    // Check if card limit is set and reached
+    if (group.cardLimit && group.cardLimit > 0) {
+      const currentCardCount = group.bingoCards ? group.bingoCards.length : 0;
+      
+      console.log(`🃏 Card limit check: ${currentCardCount}/${group.cardLimit}`);
+      
+      if (currentCardCount >= group.cardLimit) {
+        group.gameStarted = true;
+        await group.save();
+        
+        console.log(`🎮 Game auto-started for group ${groupId} - Cards: ${currentCardCount}/${group.cardLimit}`);
+        
+        return res.json({ 
+          gameStarted: true,
+          bingoCards: group.bingoCards,
+          message: `Game started! Card limit reached (${currentCardCount}/${group.cardLimit})`
+        });
+      }
+      
+      return res.json({ 
+        gameStarted: false,
+        currentCards: currentCardCount,
+        cardLimit: group.cardLimit,
+        message: `Not yet reached: ${currentCardCount}/${group.cardLimit}`
+      });
+    }
 
     res.json({ 
-      success: true, 
-      message: 'Cards added successfully',
-      addedCount: newCards.length,
-      totalCards: group.bingoCards.length
+      gameStarted: false,
+      message: 'No card limit set'
     });
+
   } catch (error) {
-    console.error('❌ Error adding cards:', error);
-    res.status(500).json({ 
-      message: 'Internal server error',
-      error: error.message,
-      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
-    });
+    console.error('Error checking card limit:', error);
+    res.status(500).json({ message: 'Internal server error' });
   }
 });
 // Helper function to check for a winner
@@ -572,15 +587,12 @@ app.post("/login", async (req, res) => {
     
     const token = jwt.sign({ id: user._id }, SECRET_KEY, { expiresIn: "1h" });
     
-    // ✅ FIX: Use your Codespace URL instead of localhost
-    const photoUrl = user.photo ? `https://redesigned-meme-x5x4rjgr499ghpqw4-5000.app.github.dev${user.photo}` : "/default-avatar.png";
-    
     res.json({
       token,
       user: {
         id: user._id,
         name: user.username,
-        photo: photoUrl,
+        photo: user.photo ? `http://localhost:5000${user.photo}` : "/default-avatar.png",
       },
     });
   } catch (error) {
